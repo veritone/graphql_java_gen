@@ -182,7 +182,7 @@ class GraphQLJavaGen
     type = type.unwrap_non_null
     case type.kind
     when 'SCALAR'
-      if ['Int', 'Float', 'Boolean'].include?(type.name)
+      if ['Int', 'Float', 'Boolean', 'JSON'].include?(type.name)
         "_queryBuilder.append(#{expr});"
       else
         "Query.appendQuotedString(_queryBuilder, #{expr}.toString());"
