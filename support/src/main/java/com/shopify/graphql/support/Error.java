@@ -1,62 +1,118 @@
 package com.shopify.graphql.support;
 
+import java.io.Serializable;
+import java.util.ArrayList;
+import java.util.List;
+
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
-
-import java.io.Serializable;
+import com.veritone.sdk.scalar.DateTime;
 
 /**
- * Created by eapache on 2015-11-17.
+ * <ul>
+ * <li>Created by eapache on 2015-11-17.
+ * <li>Updated by kmurray on 2020-05-14 to reflect Veritone's Error model
+ * </ul>
  */
 public class Error implements Serializable {
-    private final String message;
-    private final int line;
-    private final int column;
+	private final String message;
+	private final String name;
+	private final DateTime timeThrown;
+	private final ErrorData data;
+	private final List<String> path;
+	private final List<ErrorLocation> locations;
 
+	public Error(String message) {
+		this.message = message;
+		this.name = null;
+		this.timeThrown = null;
+		this.data = null;
+		this.path = null;
+		this.locations = null;
+	}
 
-    public Error(String message) {
-        this.message = message;
-        line = 0;
-        column = 0;
-    }
+	public Error(JsonObject fields) {
+		JsonElement element = fields.get("message");
+		if (element != null && element.isJsonPrimitive() && element.getAsJsonPrimitive().isString()) {
+			this.message = element.getAsString();
+		}
+		else {
+			this.message = "Unknown error";
+		}
 
-    public Error(JsonObject fields) {
-        JsonElement message = fields.get("message");
-        if (message != null && message.isJsonPrimitive() && message.getAsJsonPrimitive().isString()) {
-            this.message = message.getAsString();
-        } else {
-            this.message = "Unknown error";
-        }
+		element = fields.get("name");
+		if (element != null && element.isJsonPrimitive() && element.getAsJsonPrimitive().isString()) {
+			this.name = element.getAsString();
+		}
+		else {
+			this.name = null;
+		}
 
-        JsonElement line = fields.get("line");
-        if (line != null && line.isJsonPrimitive() && line.getAsJsonPrimitive().isNumber()) {
-            this.line = line.getAsInt();
-        } else {
-            this.line = 0;
-        }
+		element = fields.get("time_thrown");
+		if (element != null && element.isJsonPrimitive() && element.getAsJsonPrimitive().isString()) {
+			this.timeThrown = new DateTime(element.getAsString());
+		}
+		else {
+			this.timeThrown = null;
+		}
 
-        JsonElement column = fields.get("column");
-        if (column != null && column.isJsonPrimitive() && column.getAsJsonPrimitive().isNumber()) {
-            this.column = column.getAsInt();
-        } else {
-            this.column = 0;
-        }
-    }
+		element = fields.get("data");
+		if (element != null && element.isJsonObject()) {
+			this.data = new ErrorData(element.getAsJsonObject());
+		}
+		else {
+			this.data = null;
+		}
 
-    @Override
-    public String toString() {
-        return message();
-    }
+		element = fields.get("path");
+		if (element != null && element.isJsonArray()) {
+			this.path = new ArrayList<>();
+			element.getAsJsonArray().forEach(e -> {
+				if (e.isJsonPrimitive()) this.path.add(e.getAsString());
+			});
+		}
+		else {
+			this.path = null;
+		}
 
-    public String message() {
-        return message;
-    }
+		element = fields.get("locations");
+		if (element != null && element.isJsonArray()) {
+			this.locations = new ArrayList<>();
+			element.getAsJsonArray().forEach(e -> {
+				if (e.isJsonObject()) this.locations.add(new ErrorLocation(e.getAsJsonObject()));
+			});
+		}
+		else {
+			this.locations = null;
+		}
+	}
 
-    public int line() {
-        return line;
-    }
+	@Override
+	public String toString() {
+		return message();
+	}
 
-    public int column() {
-        return column;
-    }
+	public String message() {
+		return message;
+	}
+
+	public String name() {
+		return name;
+	}
+
+	public DateTime timeThrown() {
+		return timeThrown;
+	}
+
+	public ErrorData data() {
+		return data;
+	}
+
+	public List<String> path() {
+		return path;
+	}
+
+	public List<ErrorLocation> locations() {
+		return locations;
+	}
 }
